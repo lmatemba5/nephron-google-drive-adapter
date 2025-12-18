@@ -1,0 +1,42 @@
+{
+  "name": "nephron/google-drive-adapter",
+  "description": "Google Drive Filesystem adapter by Nephron Systems",
+  "type": "library",
+  "require": {
+    "php": "^8.1",
+    "google/apiclient": "^2"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^10.8",
+    "phpunit/phpunit": "^11.5"
+  },
+  "license": "proprietary",
+  "autoload": {
+    "psr-4": {
+      "Nephron\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Lifa Matemba",
+      "email": "lmatemba5@gmail.com"
+    }
+  ],
+  "config": {
+    "sort-packages": true,
+    "preferred-install": "dist",
+    "allow-plugins": {
+        "pestphp/pest-plugin": true
+    }
+  },
+  "scripts": {
+
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

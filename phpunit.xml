@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+    bootstrap="vendor/autoload.php"
+    colors="true"
+>
+    <testsuites>
+        <testsuite name="Package Tests">
+            <directory>./tests</directory>
+        </testsuite>
+    </testsuites>
+
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="CACHE_DRIVER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="GOOGLE_SERVICE_ACCOUNT_JSON_PATH" value="service-account.json"/>
+        <env name="GOOGLE_DRIVE_FOLDER_ID" value="test-folder-id"/>
+    </php>
+</phpunit>
