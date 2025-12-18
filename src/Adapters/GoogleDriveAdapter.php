@@ -105,7 +105,8 @@ class GoogleDriveAdapter
 
     public function listFiles($parentId = null, $perPage = null, $pageToken = null)
     {
-        return $this->search("'" . $parentId . "' in parents", $parentId ?: $this->parentId, $perPage, $pageToken);
+        $parentId = $parentId ?: $this->parentId;
+        return $this->search("'" . $parentId . "' in parents", $parentId, $perPage, $pageToken);
     }
 
     public function makeFilePublic($fileId)
@@ -137,7 +138,7 @@ class GoogleDriveAdapter
         return false;
     }
 
-    private function search($q, $parentId, $perPage = null, $pageToken = null)
+    private function search($q, $parentId, $perPage = null, $pageToken = null): array
     {
         $perPage = $perPage == null ? 10 : $perPage;
         $optParams = array(
