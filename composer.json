@@ -10,7 +10,7 @@
     "orchestra/testbench": "^10.8",
     "phpunit/phpunit": "^11.5"
   },
-  "license": "proprietary",
+  "license": "MIT",
   "autoload": {
     "psr-4": {
       "Nephron\\": "src/"
@@ -37,7 +37,7 @@
   "extra": {
     "laravel": {
       "providers": [
-        "Nephron\\Providers\\GoogleDriveServiceProvider"
+        "Nephron\\Internal\\Providers\\GoogleDriveServiceProvider"
       ]
     }
   },

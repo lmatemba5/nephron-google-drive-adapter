@@ -1,13 +1,15 @@
 <?php
 
-namespace Nephron\Adapters;
+namespace Nephron\Internal\Adapters;
 
+use Google\Service\Drive\DriveFile;
 use Nephron\Enums\StreamMode;
-use Nephron\Mutators\Uploader;
-use Nephron\Mutators\Deleter;
-use Nephron\Mutators\DirectoryManager;
-use Nephron\Mutators\Getter;
+use Nephron\Internal\Mutators\Uploader;
+use Nephron\Internal\Mutators\Deleter;
+use Nephron\Internal\Mutators\DirectoryManager;
+use Nephron\Internal\Mutators\Getter;
 use Illuminate\Http\UploadedFile;
+use Nephron\Models\PaginatedDriveFiles;
 
 class GoogleDriveHandler
 {
@@ -16,20 +18,19 @@ class GoogleDriveHandler
         private readonly Getter $getter,
         private readonly Deleter $deleter,
         private readonly DirectoryManager $dmanager
-    ) {
-    }
+    ) {}
 
-    public function put(UploadedFile $file, string $folderId, $isPublic=false)
+    public function put(UploadedFile $file, ?string $folderId = null, ?string $fileName = null, $isPublic = false)
     {
-        return $this->uploader->put($file, $folderId, $isPublic);
+        return $this->uploader->put($file, $folderId, $fileName, $isPublic);
     }
 
-    public function mkdir($directoryName, $folderId = null, $isPublic=false)
+    public function mkdir(string $directoryName, ?string $folderId = null, $isPublic = false): DriveFile
     {
         return $this->dmanager->mkdir($directoryName, $folderId, $isPublic);
     }
 
-    public function find($fileName, $parentId=null, $perPage=null, $pageToken=null)
+    public function find(string $fileName, ?string $parentId = null, ?int $perPage = null, ?string $pageToken = null): PaginatedDriveFiles
     {
         return $this->getter->find($fileName, $parentId, $perPage, $pageToken);
     }
@@ -43,12 +44,13 @@ class GoogleDriveHandler
     {
         return $this->uploader->makeFilePrivate($fileId);
     }
-    
-    public function listFiles($parentId=null, $perPage= null, $pageToken=null){
+
+    public function listFiles(?string $parentId = null, ?int $perPage = null, ?string $pageToken = null): PaginatedDriveFiles
+    {
         return $this->getter->listFiles($parentId, $perPage, $pageToken);
     }
 
-    public function rename($fileId, $newName)
+    public function rename(string $fileId, string $newName)
     {
         return $this->uploader->rename($fileId, $newName);
     }
@@ -58,7 +60,7 @@ class GoogleDriveHandler
         return $this->getter->get($fileId, $mode);
     }
 
-    public function delete(string $fileId): bool
+    public function delete(string $fileId)
     {
         return $this->deleter->delete($fileId);
     }

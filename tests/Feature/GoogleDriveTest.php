@@ -4,18 +4,26 @@ namespace Tests\Feature;
 
 use Google\Service\Drive\DriveFile;
 use Illuminate\Http\UploadedFile;
-use Nephron\GoogleDrive;
-use Tests\TestCase;
 use Mockery;
 use Nephron\Enums\StreamMode;
-use Nephron\Mutators\{Uploader, Getter, Deleter, DirectoryManager};
+use Nephron\GoogleDrive;
+use Nephron\Internal\Adapters\GoogleDriveHandler;
+use Nephron\Models\PaginatedDriveFiles;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Tests\TestCase;
 
 class GoogleDriveTest extends TestCase
 {
+    /** @var \Mockery\MockInterface|GoogleDriveHandler $handlerMock */
+    private $handlerMock;
+    private GoogleDrive $drive;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->handlerMock = Mockery::mock(GoogleDriveHandler::class);
+        $this->drive = new GoogleDrive($this->handlerMock);
     }
 
     protected function tearDown(): void
@@ -24,32 +32,17 @@ class GoogleDriveTest extends TestCase
         parent::tearDown();
     }
 
-    private function makeGoogleDrive(
-        ?Uploader $uploader = null,
-        ?Getter $getter = null,
-        ?Deleter $deleter = null,
-        ?DirectoryManager $dmanager = null
-    ): GoogleDrive {
-        return new GoogleDrive(
-            $uploader ?? Mockery::mock(Uploader::class),
-            $getter ?? Mockery::mock(Getter::class),
-            $deleter ?? Mockery::mock(Deleter::class),
-            $dmanager ?? Mockery::mock(DirectoryManager::class)
-        );
-    }
-
     public function test_can_put_file(): void
     {
         $file = UploadedFile::fake()->create('example.txt', 10);
         $folderId = 'test-folder';
 
-        $uploaderMock = Mockery::mock(Uploader::class);
-        $uploaderMock->shouldReceive('put')
+        $this->handlerMock->shouldReceive('put')
             ->once()
             ->withArgs(fn($fileArg, $parentFolderIdArg) => $fileArg instanceof UploadedFile && $parentFolderIdArg === $folderId)
             ->andReturn((object)['id' => 'fake-file-id', 'name' => 'example.txt']);
 
-        $result = $this->makeGoogleDrive($uploaderMock)->put($file, $folderId);
+        $result = $this->drive->put($file, $folderId);
 
         $this->assertEquals('fake-file-id', $result->id);
         $this->assertEquals('example.txt', $result->name);
@@ -60,8 +53,7 @@ class GoogleDriveTest extends TestCase
         $fileId = 'test-file-id';
         $streamMode = StreamMode::INLINE;
 
-        $getterMock = Mockery::mock(Getter::class);
-        $getterMock->shouldReceive('get')
+        $this->handlerMock->shouldReceive('get')
             ->once()
             ->with($fileId, $streamMode)
             ->andReturn(new StreamedResponse(fn() => print('file contents'), 200, [
@@ -69,7 +61,7 @@ class GoogleDriveTest extends TestCase
                 'Content-Disposition' => 'inline; filename="example.txt"',
             ]));
 
-        $response = $this->makeGoogleDrive(null, $getterMock)->get($fileId, $streamMode);
+        $response = $this->drive->get($fileId, $streamMode);
 
         $this->assertInstanceOf(StreamedResponse::class, $response);
 
@@ -84,20 +76,18 @@ class GoogleDriveTest extends TestCase
     {
         $fileId = 'test-file-id';
 
-        $deleterMock = Mockery::mock(Deleter::class);
-        $deleterMock->shouldReceive('delete')->once()->with($fileId)->andReturn(true);
+        $this->handlerMock->shouldReceive('delete')->once()->with($fileId)->andReturn(true);
 
-        $this->assertTrue($this->makeGoogleDrive(null, null, $deleterMock)->delete($fileId));
+        $this->assertTrue($this->drive->delete($fileId));
     }
 
     public function test_can_return_false_when_delete_fails(): void
     {
         $fileId = 'nonexistent-file';
 
-        $deleterMock = Mockery::mock(Deleter::class);
-        $deleterMock->shouldReceive('delete')->once()->with($fileId)->andReturn(false);
+        $this->handlerMock->shouldReceive('delete')->once()->with($fileId)->andReturn(false);
 
-        $this->assertFalse($this->makeGoogleDrive(null, null, $deleterMock)->delete($fileId));
+        $this->assertFalse($this->drive->delete($fileId));
     }
 
     public function test_can_create_a_directory(): void
@@ -105,13 +95,12 @@ class GoogleDriveTest extends TestCase
         $dirName = 'TestDir';
         $parentId = 'parent123';
 
-        $dmanagerMock = Mockery::mock(DirectoryManager::class);
-        $dmanagerMock->shouldReceive('mkdir')
+        $this->handlerMock->shouldReceive('mkdir')
             ->once()
             ->with($dirName, $parentId, false)
             ->andReturn(new DriveFile(['id' => 'dir123', 'name' => $dirName]));
 
-        $result = $this->makeGoogleDrive(null, null, null, $dmanagerMock)->mkdir($dirName, $parentId);
+        $result = $this->drive->mkdir($dirName, $parentId);
 
         $this->assertInstanceOf(DriveFile::class, $result);
         $this->assertEquals('dir123', $result->id);
@@ -125,24 +114,23 @@ class GoogleDriveTest extends TestCase
         $perPage = 2;
         $pageToken = 'token123';
 
-        $getterMock = Mockery::mock(Getter::class);
-        $getterMock->shouldReceive('find')
+        $this->handlerMock->shouldReceive('find')
             ->once()
             ->with($fileName, $parentId, $perPage, $pageToken)
-            ->andReturn([
-                'data' => [
+            ->andReturn(new PaginatedDriveFiles(
+                [
                     new DriveFile(['id' => 'file1', 'name' => 'example1.txt']),
                     new DriveFile(['id' => 'file2', 'name' => 'example2.txt']),
                 ],
-                'nextPageToken' => 'next123',
-            ]);
+                'next123',
+            ));
 
-        $result = $this->makeGoogleDrive(null, $getterMock)->find($fileName, $parentId, $perPage, $pageToken);
+        $result = $this->drive->find($fileName, $parentId, $perPage, $pageToken);
 
-        $this->assertArrayHasKey('data', $result);
-        $this->assertArrayHasKey('nextPageToken', $result);
-        $this->assertCount(2, $result['data']);
-        $this->assertInstanceOf(DriveFile::class, $result['data'][0]);
+        $this->assertObjectHasProperty("data", $result);
+        $this->assertObjectHasProperty("nextPageToken", $result);
+        $this->assertCount(2, $result->data);
+        $this->assertInstanceOf(DriveFile::class, $result->data[0]);
     }
 
     public function test_can_rename_a_file(): void
@@ -150,13 +138,12 @@ class GoogleDriveTest extends TestCase
         $fileId = 'file123';
         $newName = 'newname.txt';
 
-        $uploader = Mockery::mock(Uploader::class);
-        $uploader->shouldReceive('rename')
+        $this->handlerMock->shouldReceive('rename')
             ->once()
             ->with($fileId, $newName)
-            ->andReturn(new DriveFile(['id'=> $fileId, 'name'=> $newName]));
+            ->andReturn(new DriveFile(['id' => $fileId, 'name' => $newName]));
 
-        $result = $this->makeGoogleDrive($uploader)->rename($fileId, $newName);
+        $result = $this->drive->rename($fileId, $newName);
 
         $this->assertInstanceOf(DriveFile::class, $result);
         $this->assertEquals($newName, $result->name);
@@ -168,43 +155,40 @@ class GoogleDriveTest extends TestCase
         $perPage = 2;
         $pageToken = 'token123';
 
-        $getterMock = Mockery::mock(Getter::class);
-        $getterMock->shouldReceive('listFiles')
+        $this->handlerMock->shouldReceive('listFiles')
             ->once()
             ->with($parentId, $perPage, $pageToken)
-            ->andReturn([
-                'data' => [
+            ->andReturn(new PaginatedDriveFiles(
+                [
                     new DriveFile(['id' => 'file1', 'name' => 'file1.txt']),
                     new DriveFile(['id' => 'file2', 'name' => 'file2.txt']),
                 ],
-                'nextPageToken' => 'next456',
-            ]);
+                'next456',
+            ));
 
-        $result = $this->makeGoogleDrive(null, $getterMock)->listFiles($parentId, $perPage, $pageToken);
+        $result = $this->drive->listFiles($parentId, $perPage, $pageToken);
 
-        $this->assertArrayHasKey('data', $result);
-        $this->assertArrayHasKey('nextPageToken', $result);
-        $this->assertCount(2, $result['data']);
-        $this->assertInstanceOf(DriveFile::class, $result['data'][0]);
+        $this->assertObjectHasProperty("data", $result);
+        $this->assertObjectHasProperty("nextPageToken", $result);
+        $this->assertCount(2, $result->data);
+        $this->assertInstanceOf(DriveFile::class, $result->data[0]);
     }
 
     public function test_can_make_a_file_public(): void
     {
         $fileId = 'file123';
 
-        $uploaderMock = Mockery::mock(Uploader::class);
-        $uploaderMock->shouldReceive('makeFilePublic')->once()->with($fileId)->andReturn(true);
+        $this->handlerMock->shouldReceive('makeFilePublic')->once()->with($fileId)->andReturn(true);
 
-        $this->assertTrue($this->makeGoogleDrive($uploaderMock)->makeFilePublic($fileId));
+        $this->assertTrue($this->drive->makeFilePublic($fileId));
     }
 
     public function test_can_make_a_file_private(): void
     {
         $fileId = 'file123';
 
-        $uploaderMock = Mockery::mock(Uploader::class);
-        $uploaderMock->shouldReceive('makeFilePrivate')->once()->with($fileId)->andReturn(true);
+        $this->handlerMock->shouldReceive('makeFilePrivate')->once()->with($fileId)->andReturn(true);
 
-        $this->assertTrue($this->makeGoogleDrive($uploaderMock)->makeFilePrivate($fileId));
+        $this->assertTrue($this->drive->makeFilePrivate($fileId));
     }
 }

@@ -1,13 +1,18 @@
 <?php
 
-namespace Nephron\Adapters;
+namespace Nephron\Internal\Adapters;
 
 use Google\Service\{Drive, Drive\DriveFile, Drive\Permission};
 use Nephron\Enums\StreamMode;
 use Psr\Http\Message\ResponseInterface;
-use Illuminate\Http\UploadedFile;;
+use Illuminate\Http\UploadedFile;
+use Nephron\Models\PaginatedDriveFiles;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * @internal
+ * @psalm-internal Nephron
+ */
 class GoogleDriveAdapter
 {
     private $parentId;
@@ -19,7 +24,7 @@ class GoogleDriveAdapter
         $this->parentId = $this->parentId ?: config('credentials.folder_id');
     }
 
-    public function put(UploadedFile $file, $folderId = null, $fileName = null, $isPublic = false): DriveFile
+    public function put(UploadedFile $file, ?string $folderId = null, ?string $fileName = null, $isPublic = false): DriveFile
     {
         $filemetadata = new DriveFile([
             'name' => $fileName ?: $file->getClientOriginalName(), 
@@ -68,7 +73,7 @@ class GoogleDriveAdapter
         return empty($response->getBody()->getContents());
     }
 
-    public function mkdir(string $directoryName, $parentFolderId = null, $isPublic = false): DriveFile
+    public function mkdir(string $directoryName, ?string $parentFolderId = null, $isPublic = false): DriveFile
     {
         $driveFolder = $this->googleServiceDrive->files->create(
             new DriveFile([
@@ -88,12 +93,12 @@ class GoogleDriveAdapter
         return $driveFolder;
     }
 
-    public function find($fileName, $parentId = null, $perPage = null, $pageToken = null)
+    public function find(string $fileName, ?string $parentId = null, ?int $perPage = null, ?string $pageToken = null): PaginatedDriveFiles
     {
         return $this->search("name = '$fileName'", $parentId ?: $this->parentId, $perPage, $pageToken);
     }
 
-    public function rename($fileId, $newName): DriveFile
+    public function rename(string $fileId, string $newName): DriveFile
     {
         $newFileAttr = new DriveFile();
         $newFileAttr->setName($newName);
@@ -103,13 +108,13 @@ class GoogleDriveAdapter
         return $updatedFile;
     }
 
-    public function listFiles($parentId = null, $perPage = null, $pageToken = null)
+    public function listFiles(?string $parentId = null, ?int $perPage = null, ?string $pageToken = null): PaginatedDriveFiles
     {
         $parentId = $parentId ?: $this->parentId;
         return $this->search("'" . $parentId . "' in parents", $parentId, $perPage, $pageToken);
     }
 
-    public function makeFilePublic($fileId)
+    public function makeFilePublic(string $fileId)
     {
         $permission = new Permission([
             'type' => 'anyone',
@@ -126,7 +131,7 @@ class GoogleDriveAdapter
         return false;
     }
 
-    public function makeFilePrivate($fileId): bool
+    public function makeFilePrivate(string $fileId): bool
     {
         try {
             $reponse = $this->googleServiceDrive->permissions->delete($fileId, 'anyoneWithLink');
@@ -138,9 +143,8 @@ class GoogleDriveAdapter
         return false;
     }
 
-    private function search($q, $parentId, $perPage = null, $pageToken = null): array
+    private function search(string $q, string $parentId, ?int $perPage = 10, ?string $pageToken = null): PaginatedDriveFiles
     {
-        $perPage = $perPage == null ? 10 : $perPage;
         $optParams = array(
             'spaces' => 'drive',
             'q' => $q,
@@ -169,10 +173,7 @@ class GoogleDriveAdapter
             }
         }
 
-        return [
-            'data' => $result,
-            'nextPageToken' => $files->getNextPageToken()
-        ];
+        return new PaginatedDriveFiles($result, $files->getNextPageToken());
     }
 
     private function headers(

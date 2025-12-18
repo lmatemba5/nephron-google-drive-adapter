@@ -3,7 +3,7 @@
 namespace Tests;
 
 use Orchestra\Testbench\TestCase as Orchestra;
-use Nephron\Providers\GoogleDriveServiceProvider;
+use Nephron\Internal\Providers\GoogleDriveServiceProvider;
 
 abstract class TestCase extends Orchestra
 {
@@ -12,9 +12,5 @@ abstract class TestCase extends Orchestra
         return [
             GoogleDriveServiceProvider::class,
         ];
-    }
-
-    protected function defineEnvironment($app)
-    {
     }
 }

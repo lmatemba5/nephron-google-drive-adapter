@@ -1,9 +1,13 @@
 <?php
 
-namespace Nephron\Mutators;
+namespace Nephron\Internal\Mutators;
 
-use Nephron\Adapters\GoogleDriveAdapter;
+use Nephron\Internal\Adapters\GoogleDriveAdapter;
 
+/**
+ * @internal
+ * @psalm-internal Nephron
+ */
 class Deleter
 {
     public function __construct(private readonly GoogleDriveAdapter $googleDrive)

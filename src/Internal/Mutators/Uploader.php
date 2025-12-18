@@ -1,19 +1,23 @@
 <?php
 
-namespace Nephron\Mutators;
+namespace Nephron\Internal\Mutators;
 
-use Nephron\Adapters\GoogleDriveAdapter;
+use Nephron\Internal\Adapters\GoogleDriveAdapter;
 use Illuminate\Http\UploadedFile;
 
+/**
+ * @internal
+ * @psalm-internal Nephron
+ */
 class Uploader
 {
     public function __construct(
         private readonly GoogleDriveAdapter $googleDrive
     ) {}
 
-    public function put(UploadedFile $file, string $folderId, $isPublic = false)
+    public function put(UploadedFile $file, ?string $folderId = null, ?string $fileName = null, $isPublic = false)
     {
-        return $this->googleDrive->put($file, $folderId, $isPublic);
+        return $this->googleDrive->put($file, $folderId, $fileName, $isPublic);
     }
 
     public function makeFilePublic(string $fileId)
@@ -26,7 +30,7 @@ class Uploader
         return $this->googleDrive->makeFilePrivate($fileId);
     }
 
-    public function rename($fileId, $newName)
+    public function rename(string $fileId, string $newName)
     {
         return $this->googleDrive->rename($fileId, $newName);
     }
