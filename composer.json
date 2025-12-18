@@ -31,7 +31,14 @@
     "sort-packages": true,
     "preferred-install": "dist",
     "allow-plugins": {
-        "pestphp/pest-plugin": true
+      "pestphp/pest-plugin": true
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Nephron\\Providers\\GoogleDriveServiceProvider"
+      ]
     }
   },
   "scripts": {
