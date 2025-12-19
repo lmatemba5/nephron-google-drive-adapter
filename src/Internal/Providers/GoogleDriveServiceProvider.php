@@ -44,29 +44,32 @@ class GoogleDriveServiceProvider extends ServiceProvider
 
     public function register(): void
     {
-        $this->app->singleton(
-            DriveHandlerInterface::class,
-            function () {
-                $credentials = $this->getCredentials();
+        $this->app->singleton(DriveHandlerInterface::class, function () {
+            $credentials = $this->getCredentials();
 
-                $client = new Client();
-                $client->addScope(Drive::DRIVE);
-                $client->setAuthConfig($credentials);
-                $client->setAccessType('offline');
-
-                $drive = new Drive($client);
-                $drive->servicePath = config('credentials.folder_id');
-
-                $adapter = new GoogleDriveAdapter($drive);
-
-                return new GoogleDriveHandler(
-                    new Uploader($adapter),
-                    new Getter($adapter),
-                    new Deleter($adapter),
-                    new DirectoryManager($adapter)
+            if (empty($credentials)) {
+                throw new \Exception(
+                    'Service account file not found'
                 );
             }
-        );
+
+            $client = new Client();
+            $client->setAuthConfig($credentials);
+            $client->addScope(Drive::DRIVE);
+            $client->setAccessType('offline');
+
+            $drive = new Drive($client);
+            $drive->servicePath = config('credentials.folder_id');
+
+            $adapter = new GoogleDriveAdapter($drive);
+
+            return new GoogleDriveHandler(
+                new Uploader($adapter),
+                new Getter($adapter),
+                new Deleter($adapter),
+                new DirectoryManager($adapter)
+            );
+        });
 
         $this->app->singleton(GoogleDrive::class);
 

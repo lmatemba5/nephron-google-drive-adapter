@@ -5,13 +5,13 @@ namespace Nephron;
 use Google\Service\Drive\DriveFile;
 use Illuminate\Http\UploadedFile;
 use Nephron\Enums\StreamMode;
-use Nephron\Internal\Adapters\GoogleDriveHandler;
+use Nephron\Internal\Contracts\DriveHandlerInterface;
 use Nephron\Models\PaginatedDriveFiles;
 
 final class GoogleDrive
 {
     public function __construct(
-        private readonly GoogleDriveHandler $handler
+        private readonly DriveHandlerInterface $handler
     ) {}
 
     /**
