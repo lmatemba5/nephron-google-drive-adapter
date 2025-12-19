@@ -11,6 +11,15 @@ use Nephron\Internal\Mutators\Getter;
 use Illuminate\Http\UploadedFile;
 use Nephron\Models\PaginatedDriveFiles;
 
+/**
+ * This is an internal implementation and it can change anytime. Do not use it directly
+ * 
+ * Use Nephron\GoogleDrive instead.
+ * 
+ * @internal
+ * @psalm-internal Nephron
+ * @phpstan-internal Nephron
+ */
 class GoogleDriveHandler
 {
     public function __construct(

@@ -15,8 +15,13 @@ use Nephron\Internal\Mutators\Getter;
 use Nephron\Internal\Mutators\Uploader;
 
 /**
+ * This is an internal implementation and it can change anytime. Do not use it directly
+ * 
+ * Use Nephron\GoogleDrive instead.
+ * 
  * @internal
  * @psalm-internal Nephron
+ * @phpstan-internal Nephron
  */
 class GoogleDriveServiceProvider extends ServiceProvider
 {

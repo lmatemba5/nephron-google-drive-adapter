@@ -8,6 +8,15 @@ use Nephron\Enums\StreamMode;
 use Nephron\Models\PaginatedDriveFiles;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * This is an internal implementation and it can change anytime. Do not use it directly
+ * 
+ * Use Nephron\GoogleDrive instead.
+ * 
+ * @internal
+ * @psalm-internal Nephron
+ * @phpstan-internal Nephron
+ */
 interface DriveHandlerInterface
 {
     public function put(
