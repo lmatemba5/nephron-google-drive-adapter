@@ -42,7 +42,7 @@ class GoogleDriveAdapter
             $driveFile = $this->find($filemetadata->name, $parentId, null, null);
 
             if(count($driveFile->data) > 0){
-                abort(400, "A file with the same name already exists.");
+               return $driveFile->data[0];
             }
         }
 
@@ -94,7 +94,7 @@ class GoogleDriveAdapter
             $driveFile = $this->find($directoryName, $parentId, null, null);
 
             if(count($driveFile->data) > 0){
-                abort(400, "A folder with the same name exists.");
+                return $driveFile->data[0];
             }
         }
 
