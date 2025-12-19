@@ -25,7 +25,7 @@ class Getter
         return $this->googleDrive->get($fileId, $mode);
     }
 
-    public function find(string $fileName, ?string $parentId  = null, ?int $perPage = null, $pageToken)
+    public function find(string $fileName, ?string $parentId  = null, ?int $perPage = null, ?string $pageToken=null)
     {
         return $this->googleDrive->find($fileName, $parentId, $perPage, $pageToken);
     }
