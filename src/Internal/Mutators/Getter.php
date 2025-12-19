@@ -20,17 +20,17 @@ class Getter
         private readonly GoogleDriveAdapter $googleDrive,
     ) {}
 
-    public function get(string $fileId, StreamMode $mode = StreamMode::INLINE)
+    public function get(string $fileId, StreamMode $mode)
     {
         return $this->googleDrive->get($fileId, $mode);
     }
 
-    public function find(string $fileName, ?string $parentId  = null, ?int $perPage = null, ?string $pageToken=null)
+    public function find(string $fileName, ?string $parentId, ?int $perPage, ?string $pageToken)
     {
         return $this->googleDrive->find($fileName, $parentId, $perPage, $pageToken);
     }
 
-    public function listFiles(?string $parentId = null, ?int $perPage = null, ?string $pageToken = null)
+    public function listFiles(?string $parentId, ?int $perPage, ?string $pageToken)
     {
         return $this->googleDrive->listFiles($parentId, $perPage, $pageToken);
     }

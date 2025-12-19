@@ -29,17 +29,17 @@ class GoogleDriveHandler
         private readonly DirectoryManager $dmanager
     ) {}
 
-    public function put(UploadedFile $file, ?string $folderId = null, ?string $fileName = null, $isPublic = false)
+    public function put(UploadedFile $file, ?string $folderId, ?string $fileName, bool $strict, bool $isPublic)
     {
-        return $this->uploader->put($file, $folderId, $fileName, $isPublic);
+        return $this->uploader->put($file, $folderId, $fileName, $strict, $isPublic);
     }
 
-    public function mkdir(string $directoryName, ?string $folderId = null, $isPublic = false): DriveFile
+    public function mkdir(string $directoryName, ?string $folderId, bool $strict, bool $isPublic): DriveFile
     {
-        return $this->dmanager->mkdir($directoryName, $folderId, $isPublic);
+        return $this->dmanager->mkdir($directoryName, $folderId, $strict, $isPublic);
     }
 
-    public function find(string $fileName, ?string $parentId = null, ?int $perPage = null, ?string $pageToken = null): PaginatedDriveFiles
+    public function find(string $fileName, ?string $parentId, ?int $perPage, ?string $pageToken): PaginatedDriveFiles
     {
         return $this->getter->find($fileName, $parentId, $perPage, $pageToken);
     }
@@ -54,14 +54,14 @@ class GoogleDriveHandler
         return $this->uploader->makeFilePrivate($fileId);
     }
 
-    public function listFiles(?string $parentId = null, ?int $perPage = null, ?string $pageToken = null): PaginatedDriveFiles
+    public function listFiles(?string $parentId, ?int $perPage, ?string $pageToken): PaginatedDriveFiles
     {
         return $this->getter->listFiles($parentId, $perPage, $pageToken);
     }
 
-    public function rename(string $fileId, string $newName)
+    public function rename(string $fileId, string $newName, ?string $parentFolderId, bool $strict)
     {
-        return $this->uploader->rename($fileId, $newName);
+        return $this->uploader->rename($fileId, $newName, $parentFolderId, $strict);
     }
 
     public function get(string $fileId, StreamMode $mode)

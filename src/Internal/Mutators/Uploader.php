@@ -21,9 +21,9 @@ class Uploader
         private readonly GoogleDriveAdapter $googleDrive
     ) {}
 
-    public function put(UploadedFile $file, ?string $folderId = null, ?string $fileName = null, $isPublic = false)
+    public function put(UploadedFile $file, ?string $folderId, ?string $fileName, bool $strict, bool $isPublic)
     {
-        return $this->googleDrive->put($file, $folderId, $fileName, $isPublic);
+        return $this->googleDrive->put($file, $folderId, $fileName, $strict, $isPublic);
     }
 
     public function makeFilePublic(string $fileId)
@@ -36,8 +36,8 @@ class Uploader
         return $this->googleDrive->makeFilePrivate($fileId);
     }
 
-    public function rename(string $fileId, string $newName)
+    public function rename(string $fileId, string $newName, ?string $parentFolderId, bool $strict)
     {
-        return $this->googleDrive->rename($fileId, $newName);
+        return $this->googleDrive->rename($fileId, $newName, $parentFolderId, $strict);
     }
 }

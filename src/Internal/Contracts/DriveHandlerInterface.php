@@ -20,23 +20,25 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 interface DriveHandlerInterface
 {
     public function put(
-        UploadedFile $file,
-        ?string $folderId = null,
-        ?string $fileName = null,
-        $isPublic = false
+       UploadedFile $file, 
+       ?string $folderId, 
+       ?string $fileName, 
+       bool $strict, 
+       bool $isPublic
     ): DriveFile;
 
     public function mkdir(
-        string $directoryName,
-        ?string $folderId = null,
-        $isPublic = false
+        string $directoryName, 
+        ?string $folderId, 
+        bool $strict, 
+        bool $isPublic
     ): DriveFile;
 
     public function find(
         string $fileName,
-        ?string $parentId = null,
-        ?int $perPage = null,
-        ?string $pageToken = null
+        ?string $parentId,
+        ?int $perPage,
+        ?string $pageToken
     ): PaginatedDriveFiles;
 
     public function makeFilePublic(
@@ -48,14 +50,16 @@ interface DriveHandlerInterface
     ): bool;
 
     public function listFiles(
-        ?string $parentId = null,
-        ?int $perPage = null,
-        ?string $pageToken = null
+        ?string $parentId,
+        ?int $perPage,
+        ?string $pageToken
     ): PaginatedDriveFiles;
 
     public function rename(
-        string $fileId,
-        string $newName
+        string $fileId, 
+        string $newName, 
+        ?string $parentFolderId, 
+        bool $strict
     ): DriveFile;
 
     public function get(

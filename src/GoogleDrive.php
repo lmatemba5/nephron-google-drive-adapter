@@ -22,9 +22,9 @@ final class GoogleDrive
      * @param bool $isPublic wheather to make it prvate or public
      * @return DriveFile
      */
-    public function put(UploadedFile $file, ?string $folderId = null, ?string $fileName = null, $isPublic = false)
+    public function put(UploadedFile $file, ?string $folderId = null, ?string $fileName = null, bool $strict = true, bool $isPublic = false)
     {
-        return $this->handler->put($file, $folderId, $fileName, $isPublic);
+        return $this->handler->put($file, $folderId, $fileName, $strict, $isPublic);
     }
 
     /**
@@ -35,9 +35,9 @@ final class GoogleDrive
      * @param bool $isPublic wheather to make it prvate or public
      * @return DriveFile
      */
-    public function mkdir(string $directoryName, ?string $folderId = null, $isPublic = false): DriveFile
+    public function mkdir(string $directoryName, ?string $folderId = null, bool $strict = true, bool $isPublic = false): DriveFile
     {
-        return $this->handler->mkdir($directoryName, $folderId, $isPublic);
+        return $this->handler->mkdir($directoryName, $folderId, $strict, $isPublic);
     }
 
     /**
@@ -52,7 +52,7 @@ final class GoogleDrive
      *     key: string
      * }
      */
-    public function find(string $fileName, ?string $parentId = null, ?int $perPage = null, ?string $pageToken = null): PaginatedDriveFiles
+    public function find(string $fileName, ?string $parentId = null, int $perPage = 10, ?string $pageToken = null): PaginatedDriveFiles
     {
         return $this->handler->find($fileName, $parentId, $perPage, $pageToken);
     }
@@ -90,7 +90,7 @@ final class GoogleDrive
      *     key: string
      * }
      */
-    public function listFiles(?string $parentId = null, ?int $perPage = null, ?string $pageToken = null): PaginatedDriveFiles
+    public function listFiles(?string $parentId = null, int $perPage = 10, ?string $pageToken = null): PaginatedDriveFiles
     {
         return $this->handler->listFiles($parentId, $perPage, $pageToken);
     }
@@ -102,9 +102,9 @@ final class GoogleDrive
      * @param string $newName the new name of the file
      * @return DriveFile
      */
-    public function rename(string $fileId, string $newName)
+    public function rename(string $fileId, string $newName, ?string $parentFolderId = null, bool $strict = true)
     {
-        return $this->handler->rename($fileId, $newName);
+        return $this->handler->rename($fileId, $newName, $parentFolderId, $strict);
     }
 
     /**
@@ -114,7 +114,7 @@ final class GoogleDrive
      * @param StreamMode $mode one of StreamMode::INLINE|StreamMode::DOWNLOAD
      * @return StreamedResponse
      */
-    public function get(string $fileId, StreamMode $mode)
+    public function get(string $fileId, StreamMode $mode=StreamMode::INLINE)
     {
         return $this->handler->get($fileId, $mode);
     }

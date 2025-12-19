@@ -29,14 +29,22 @@ class GoogleDriveAdapter
         $this->parentId = $this->parentId ?: config('credentials.folder_id');
     }
 
-    public function put(UploadedFile $file, ?string $folderId = null, ?string $fileName = null, $isPublic = false): DriveFile
+    public function put(UploadedFile $file, ?string $folderId, ?string $fileName, bool $strict, bool $isPublic): DriveFile
     {
+        $parentId = $folderId ?: $this->parentId;
+
         $filemetadata = new DriveFile([
             'name' => $fileName ?: $file->getClientOriginalName(), 
-            'parents' => [
-                $folderId ?: $this->parentId
-            ]
+            'parents' => [$parentId]
         ]);
+
+        if($strict){
+            $driveFile = $this->find($filemetadata->name, $parentId, null, null);
+
+            if(count($driveFile->data) > 0){
+                abort(400, "A file with the same name already exists.");
+            }
+        }
 
         $driveFile =  $this->googleServiceDrive->files->create($filemetadata, [
             'data' => $file->getContent(),
@@ -51,7 +59,7 @@ class GoogleDriveAdapter
         return $driveFile;
     }
 
-    public function get(string $fileId, StreamMode $mode = StreamMode::INLINE): StreamedResponse
+    public function get(string $fileId, StreamMode $mode): StreamedResponse
     {
         $metadata = $this->googleServiceDrive->files->get($fileId, [
             'fields' => 'name,mimeType'
@@ -78,8 +86,18 @@ class GoogleDriveAdapter
         return empty($response->getBody()->getContents());
     }
 
-    public function mkdir(string $directoryName, ?string $parentFolderId = null, $isPublic = false): DriveFile
+    public function mkdir(string $directoryName, ?string $parentFolderId, bool $strict, bool $isPublic): DriveFile
     {
+        $parentId = $parentFolderId ?: $this->parentId;
+
+        if($strict){
+            $driveFile = $this->find($directoryName, $parentId, null, null);
+
+            if(count($driveFile->data) > 0){
+                abort(400, "A folder with the same name exists.");
+            }
+        }
+
         $driveFolder = $this->googleServiceDrive->files->create(
             new DriveFile([
                 'name' => $directoryName,
@@ -98,22 +116,32 @@ class GoogleDriveAdapter
         return $driveFolder;
     }
 
-    public function find(string $fileName, ?string $parentId = null, ?int $perPage = null, ?string $pageToken = null): PaginatedDriveFiles
+    public function find(string $fileName, ?string $parentId, ?int $perPage, ?string $pageToken): PaginatedDriveFiles
     {
         return $this->search("name = '$fileName'", $parentId ?: $this->parentId, $perPage, $pageToken);
     }
 
-    public function rename(string $fileId, string $newName): DriveFile
+    public function rename(string $fileId, string $newName, ?string $parentFolderId, bool $strict): DriveFile
     {
         $newFileAttr = new DriveFile();
         $newFileAttr->setName($newName);
+
+        $parentId = $parentFolderId ?: $this->parentId;
+
+        if($strict){
+            $driveFile = $this->find($newName, $parentId, null, null);
+
+            if(count($driveFile->data) > 0){
+                abort(400, "The name is already taken.");
+            }
+        }
 
         $updatedFile = $this->googleServiceDrive->files->update($fileId, $newFileAttr, ['fields' => 'id, name']);
 
         return $updatedFile;
     }
 
-    public function listFiles(?string $parentId = null, ?int $perPage = null, ?string $pageToken = null): PaginatedDriveFiles
+    public function listFiles(?string $parentId, ?int $perPage, ?string $pageToken): PaginatedDriveFiles
     {
         $parentId = $parentId ?: $this->parentId;
         return $this->search("'" . $parentId . "' in parents", $parentId, $perPage, $pageToken);
@@ -148,7 +176,7 @@ class GoogleDriveAdapter
         return false;
     }
 
-    private function search(string $q, string $parentId, ?int $perPage = 10, ?string $pageToken = null): PaginatedDriveFiles
+    private function search(string $q, string $parentId, ?int $perPage, ?string $pageToken): PaginatedDriveFiles
     {
         $optParams = array(
             'spaces' => 'drive',
