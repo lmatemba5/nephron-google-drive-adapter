@@ -6,3 +6,4 @@
 /.git export-ignore
 phpunit.xml export-ignore
 composer.lock export-ignore
+service-account.json export-ignore

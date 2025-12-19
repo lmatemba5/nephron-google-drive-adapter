@@ -8,4 +8,9 @@
             <directory>./tests</directory>
         </testsuite>
     </testsuites>
+
+    <php>
+        <env name="GOOGLE_SERVICE_ACCOUNT_JSON_PATH" value="service-account.json"/>
+        <env name="GOOGLE_DRIVE_FOLDER_ID" value="test-folder-id"/>
+    </php>
 </phpunit>

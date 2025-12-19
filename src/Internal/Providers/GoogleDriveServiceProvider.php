@@ -44,7 +44,7 @@ class GoogleDriveServiceProvider extends ServiceProvider
 
     public function register(): void
     {
-        $this->app->singleton(DriveHandlerInterface::class, function () {
+        $this->app->singleton(GoogleDriveHandler::class, function () {
             $credentials = $this->getCredentials();
 
             if (empty($credentials)) {

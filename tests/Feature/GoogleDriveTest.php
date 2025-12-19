@@ -51,17 +51,17 @@ class GoogleDriveTest extends TestCase
     public function test_can_get_a_file_as_streamed_response(): void
     {
         $fileId = 'test-file-id';
-        $streamMode = StreamMode::INLINE;
+        $streammode = StreamMode::INLINE;
 
         $this->handlerMock->shouldReceive('get')
             ->once()
-            ->with($fileId, $streamMode)
+            ->with($fileId, $streammode)
             ->andReturn(new StreamedResponse(fn() => print('file contents'), 200, [
                 'Content-Type' => 'text/plain',
                 'Content-Disposition' => 'inline; filename="example.txt"',
             ]));
 
-        $response = $this->drive->get($fileId, $streamMode);
+        $response = $this->drive->get($fileId, $streammode);
 
         $this->assertInstanceOf(StreamedResponse::class, $response);
 
@@ -97,10 +97,10 @@ class GoogleDriveTest extends TestCase
 
         $this->handlerMock->shouldReceive('mkdir')
             ->once()
-            ->with($dirName, $parentId, false)
+            ->with($dirName, $parentId, true, false)
             ->andReturn(new DriveFile(['id' => 'dir123', 'name' => $dirName]));
 
-        $result = $this->drive->mkdir($dirName, $parentId);
+        $result = $this->drive->mkdir($dirName, $parentId, true, false);
 
         $this->assertInstanceOf(DriveFile::class, $result);
         $this->assertEquals('dir123', $result->id);
@@ -140,10 +140,10 @@ class GoogleDriveTest extends TestCase
 
         $this->handlerMock->shouldReceive('rename')
             ->once()
-            ->with($fileId, $newName)
+            ->with($fileId, $newName, null, true)
             ->andReturn(new DriveFile(['id' => $fileId, 'name' => $newName]));
 
-        $result = $this->drive->rename($fileId, $newName);
+        $result = $this->drive->rename($fileId, $newName, null, true);
 
         $this->assertInstanceOf(DriveFile::class, $result);
         $this->assertEquals($newName, $result->name);
