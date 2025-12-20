@@ -20,7 +20,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class GoogleDriveAdapter
 {
     private $parentId;
-    private $STREAMING_MODES= ['inline', 'download'];
+    private $STREAMING_MODES = ['inline', 'download'];
 
     public function __construct(
         private readonly Drive $googleServiceDrive
@@ -34,15 +34,15 @@ class GoogleDriveAdapter
         $parentId = $folderId ?: $this->parentId;
 
         $filemetadata = new DriveFile([
-            'name' => $fileName ?: $file->getClientOriginalName(), 
+            'name' => $fileName ?: $file->getClientOriginalName(),
             'parents' => [$parentId]
         ]);
 
-        if($strict){
+        if ($strict) {
             $driveFile = $this->find($filemetadata->name, $parentId, null, null);
 
-            if(count($driveFile->data) > 0){
-               return $driveFile->data[0];
+            if (count($driveFile->data) > 0) {
+                return $driveFile->data[0];
             }
         }
 
@@ -63,27 +63,19 @@ class GoogleDriveAdapter
     {
 
         if (! in_array($mode, $this->STREAMING_MODES)) {
-            return response()->json([
-                'message' => 'Invalid stream mode'
-            ], 400);
+            throw new \InvalidArgumentException("Invalid streaming mode: $mode");
         }
-        
+
         $metadata = $this->googleServiceDrive->files->get($fileId, [
             'fields' => 'name,mimeType'
         ]);
-
-        if(! $metadata || ! $metadata->getName()) {
-            return response()->json([
-                'message' => 'File not found'
-            ], 404);
-        }
 
         /** @var ResponseInterface $mediaResponse */
         $mediaResponse = $this->googleServiceDrive->files->get($fileId, [
             'alt' => 'media',
         ]);
 
-        $headers = $this->headers($metadata->mimeType,$metadata->name, $mode);
+        $headers = $this->headers($metadata->mimeType, $metadata->name, $mode);
 
         return response()->stream(
             fn() => fpassthru($mediaResponse->getBody()->detach()),
@@ -103,10 +95,10 @@ class GoogleDriveAdapter
     {
         $parentId = $parentFolderId ?: $this->parentId;
 
-        if($strict){
+        if ($strict) {
             $driveFile = $this->find($directoryName, $parentId, null, null);
 
-            if(count($driveFile->data) > 0){
+            if (count($driveFile->data) > 0) {
                 return $driveFile->data[0];
             }
         }
@@ -141,10 +133,10 @@ class GoogleDriveAdapter
 
         $parentId = $parentFolderId ?: $this->parentId;
 
-        if($strict){
+        if ($strict) {
             $driveFile = $this->find($newName, $parentId, null, null);
 
-            if(count($driveFile->data) > 0){
+            if (count($driveFile->data) > 0) {
                 abort(400, "The name is already taken.");
             }
         }
@@ -198,7 +190,7 @@ class GoogleDriveAdapter
             'pageToken' => $pageToken,
             'fields' => 'nextPageToken,files(id,name,webViewLink,parents,size)',
         );
-        
+
 
         $files = $this->googleServiceDrive->files->listFiles($optParams);
 
@@ -247,6 +239,9 @@ class GoogleDriveAdapter
             'Content-Type'        => $mime,
             'Content-Disposition' => 'inline',
             'Accept-Ranges'       => $mime === 'video/mp4' ? 'bytes' : 'none',
+            'Cache-Control'       => 'public, max-age=31536000, immutable',
+            'CDN-Cache-Control'   => 'public, max-age=31536000, immutable',
+            'Vary'                => 'Accept-Encoding',
         ]);
     }
 
@@ -257,6 +252,9 @@ class GoogleDriveAdapter
         return array_merge($headers, [
             'Content-Type'        => 'application/octet-stream',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Cache-Control'       => 'public, max-age=31536000, immutable',
+            'CDN-Cache-Control'   => 'public, max-age=31536000, immutable',
+            'Vary'                => 'Accept-Encoding',
         ]);
     }
 }
