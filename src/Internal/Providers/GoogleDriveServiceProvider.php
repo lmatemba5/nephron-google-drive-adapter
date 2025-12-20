@@ -8,7 +8,6 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Storage;
 use Nephron\Internal\Adapters\{GoogleDriveAdapter, GoogleDriveHandler};
 use Nephron\GoogleDrive;
-use Nephron\Internal\Contracts\DriveHandlerInterface;
 use Nephron\Internal\Mutators\Deleter;
 use Nephron\Internal\Mutators\DirectoryManager;
 use Nephron\Internal\Mutators\Getter;

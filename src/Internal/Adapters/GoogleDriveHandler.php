@@ -3,7 +3,6 @@
 namespace Nephron\Internal\Adapters;
 
 use Google\Service\Drive\DriveFile;
-use Nephron\Enums\StreamMode;
 use Nephron\Internal\Mutators\Uploader;
 use Nephron\Internal\Mutators\Deleter;
 use Nephron\Internal\Mutators\DirectoryManager;
@@ -64,7 +63,7 @@ class GoogleDriveHandler
         return $this->uploader->rename($fileId, $newName, $parentFolderId, $strict);
     }
 
-    public function get(string $fileId, StreamMode $mode)
+    public function get(string $fileId, string $mode)
     {
         return $this->getter->get($fileId, $mode);
     }

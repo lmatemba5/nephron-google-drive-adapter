@@ -3,10 +3,10 @@
 namespace Nephron\Internal\Adapters;
 
 use Google\Service\{Drive, Drive\DriveFile, Drive\Permission};
-use Nephron\Enums\StreamMode;
 use Psr\Http\Message\ResponseInterface;
 use Illuminate\Http\UploadedFile;
 use Nephron\Models\PaginatedDriveFiles;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -21,6 +21,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class GoogleDriveAdapter
 {
     private $parentId;
+    private $STREAMING_MODES= ['inline', 'download'];
 
     public function __construct(
         private readonly Drive $googleServiceDrive
@@ -59,11 +60,24 @@ class GoogleDriveAdapter
         return $driveFile;
     }
 
-    public function get(string $fileId, StreamMode $mode): StreamedResponse
+    public function get(string $fileId, string $mode): StreamedResponse | JsonResponse
     {
+
+        if (! in_array($mode, $this->STREAMING_MODES)) {
+            return response()->json([
+                'message' => 'Invalid stream mode'
+            ], 400);
+        }
+        
         $metadata = $this->googleServiceDrive->files->get($fileId, [
             'fields' => 'name,mimeType'
         ]);
+
+        if(! $metadata || ! $metadata->getName()) {
+            return response()->json([
+                'message' => 'File not found'
+            ], 404);
+        }
 
         /** @var ResponseInterface $mediaResponse */
         $mediaResponse = $this->googleServiceDrive->files->get($fileId, [
@@ -212,15 +226,15 @@ class GoogleDriveAdapter
     private function headers(
         string $mime,
         string $filename,
-        StreamMode $mode
+        string $mode
     ): array {
         $headers = [
             'Cache-Control' => 'public, max-age=31536000, immutable',
         ];
 
         return match ($mode) {
-            StreamMode::INLINE => $this->inline($mime, $headers),
-            StreamMode::DOWNLOAD => $this->download($filename, $headers),
+            'inline' => $this->inline($mime, $headers),
+            'download' => $this->download($filename, $headers),
         };
     }
 

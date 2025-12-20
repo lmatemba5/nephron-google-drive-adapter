@@ -4,7 +4,6 @@ namespace Nephron;
 
 use Google\Service\Drive\DriveFile;
 use Illuminate\Http\UploadedFile;
-use Nephron\Enums\StreamMode;
 use Nephron\Internal\Adapters\GoogleDriveHandler;
 use Nephron\Models\PaginatedDriveFiles;
 
@@ -111,10 +110,10 @@ final class GoogleDrive
      * Retrieve a file as a stream or download 
      * 
      * @param string $fileId the id for the file to stream
-     * @param StreamMode $mode one of StreamMode::INLINE|StreamMode::DOWNLOAD
+     * @param string $mode one of inline|download
      * @return StreamedResponse
      */
-    public function get(string $fileId, StreamMode $mode=StreamMode::INLINE)
+    public function get(string $fileId, string $mode = 'inline')
     {
         return $this->handler->get($fileId, $mode);
     }

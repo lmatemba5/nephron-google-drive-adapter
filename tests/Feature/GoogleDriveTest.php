@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use Google\Service\Drive\DriveFile;
 use Illuminate\Http\UploadedFile;
 use Mockery;
-use Nephron\Enums\StreamMode;
 use Nephron\GoogleDrive;
 use Nephron\Internal\Adapters\GoogleDriveHandler;
 use Nephron\Models\PaginatedDriveFiles;
@@ -51,7 +50,7 @@ class GoogleDriveTest extends TestCase
     public function test_can_get_a_file_as_streamed_response(): void
     {
         $fileId = 'test-file-id';
-        $streammode = StreamMode::INLINE;
+        $streammode = "inline";
 
         $this->handlerMock->shouldReceive('get')
             ->once()

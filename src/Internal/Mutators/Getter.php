@@ -3,7 +3,6 @@
 namespace Nephron\Internal\Mutators;
 
 use Nephron\Internal\Adapters\GoogleDriveAdapter;
-use Nephron\Enums\StreamMode;
 
 /**
  * This is an internal implementation and it can change anytime. Do not use it directly
@@ -20,7 +19,7 @@ class Getter
         private readonly GoogleDriveAdapter $googleDrive,
     ) {}
 
-    public function get(string $fileId, StreamMode $mode)
+    public function get(string $fileId, string $mode)
     {
         return $this->googleDrive->get($fileId, $mode);
     }
