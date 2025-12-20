@@ -4,9 +4,8 @@ namespace Nephron\Internal\Adapters;
 
 use Google\Service\{Drive, Drive\DriveFile, Drive\Permission};
 use Psr\Http\Message\ResponseInterface;
-use Illuminate\Http\UploadedFile;
+use Illuminate\Http\{UploadedFile, JsonResponse};
 use Nephron\Models\PaginatedDriveFiles;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -161,7 +160,7 @@ class GoogleDriveAdapter
         return $this->search("'" . $parentId . "' in parents", $parentId, $perPage, $pageToken);
     }
 
-    public function makeFilePublic(string $fileId)
+    public function makeFilePublic(string $fileId): bool
     {
         $permission = new Permission([
             'type' => 'anyone',

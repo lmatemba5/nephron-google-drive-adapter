@@ -2,10 +2,8 @@
 
 namespace Nephron;
 
-use Google\Service\Drive\DriveFile;
 use Illuminate\Http\UploadedFile;
 use Nephron\Internal\Adapters\GoogleDriveHandler;
-use Nephron\Models\PaginatedDriveFiles;
 
 final class GoogleDrive
 {
@@ -19,7 +17,7 @@ final class GoogleDrive
      * @param UploadedFile $file the file to be uploaded
      * @param string|null $folderId the parent container for this new file
      * @param bool $isPublic wheather to make it prvate or public
-     * @return DriveFile
+     * 
      */
     public function put(UploadedFile $file, ?string $folderId = null, ?string $fileName = null, bool $strict = true, bool $isPublic = false)
     {
@@ -32,9 +30,9 @@ final class GoogleDrive
      * @param string $directoryName the name of the new folder
      * @param string|null $folderId the parent container for this new folder
      * @param bool $isPublic wheather to make it prvate or public
-     * @return DriveFile
+     * 
      */
-    public function mkdir(string $directoryName, ?string $folderId = null, bool $strict = true, bool $isPublic = false): DriveFile
+    public function mkdir(string $directoryName, ?string $folderId = null, bool $strict = true, bool $isPublic = false)
     {
         return $this->handler->mkdir($directoryName, $folderId, $strict, $isPublic);
     }
@@ -46,12 +44,8 @@ final class GoogleDrive
      * @param string|null $parentId the parent folder to search in
      * @param int|null $perPage the number of items to fetch per iteration
      * @param string|null $pageToken the auth token to be used for the second fetch
-     * @return PaginatedDriveFiles{
-     *     data: DriveFile[],
-     *     key: string
-     * }
      */
-    public function find(string $fileName, ?string $parentId = null, int $perPage = 10, ?string $pageToken = null): PaginatedDriveFiles
+    public function find(string $fileName, ?string $parentId = null, int $perPage = 10, ?string $pageToken = null)
     {
         return $this->handler->find($fileName, $parentId, $perPage, $pageToken);
     }
@@ -60,7 +54,6 @@ final class GoogleDrive
      * Make a file publicly available 
      * 
      * @param string $fileId the file's google drive id
-     * @return bool
      */
     public function makeFilePublic(string $fileId)
     {
@@ -71,7 +64,6 @@ final class GoogleDrive
      * Make a file private 
      * 
      * @param string $fileId the file's google drive id
-     * @return bool
      */
     public function makeFilePrivate(string $fileId)
     {
@@ -84,12 +76,8 @@ final class GoogleDrive
      * @param string|null $parentId the parent folder to search in
      * @param int $perPage the number of items to fetch per iteration
      * @param string|null $pageToken the auth token to be used for the second fetch
-     * @return PaginatedDriveFiles{
-     *     data: DriveFile[],
-     *     key: string
-     * }
      */
-    public function listFiles(?string $parentId = null, int $perPage = 10, ?string $pageToken = null): PaginatedDriveFiles
+    public function listFiles(?string $parentId = null, int $perPage = 10, ?string $pageToken = null)
     {
         return $this->handler->listFiles($parentId, $perPage, $pageToken);
     }
@@ -99,7 +87,6 @@ final class GoogleDrive
      * 
      * @param string $fileId the id for the file to be renamed
      * @param string $newName the new name of the file
-     * @return DriveFile
      */
     public function rename(string $fileId, string $newName, ?string $parentFolderId = null, bool $strict = true)
     {
@@ -111,7 +98,6 @@ final class GoogleDrive
      * 
      * @param string $fileId the id for the file to stream
      * @param string $mode one of inline|download
-     * @return StreamedResponse
      */
     public function get(string $fileId, string $mode = 'inline')
     {
@@ -122,7 +108,6 @@ final class GoogleDrive
      * Delete a file in google drive 
      * 
      * @param string $fileId the id for the file to be deleted
-     * @return bool
      */
     public function delete(string $fileId)
     {
