@@ -77,11 +77,9 @@ class GoogleDriveAdapter
 
         $headers = $this->headers($metadata->mimeType, $metadata->name, $mode);
 
-        return response()->stream(
-            fn() => fpassthru($mediaResponse->getBody()->detach()),
-            200,
-            $headers
-        );
+        return response()->stream(function () use ($mediaResponse) {
+            echo $mediaResponse->getBody()->getContents();
+        }, 200, $headers);
     }
 
     public function delete(string $fileId): bool
