@@ -59,7 +59,7 @@ class GoogleDriveAdapter
         return $driveFile;
     }
 
-    public function get(string $fileId, string $mode): StreamedResponse | JsonResponse
+    public function get(string $fileId, string $mode): StreamedResponse
     {
 
         if (! in_array($mode, $this->STREAMING_MODES)) {

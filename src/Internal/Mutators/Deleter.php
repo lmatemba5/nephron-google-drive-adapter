@@ -18,7 +18,7 @@ class Deleter
     public function __construct(private readonly GoogleDriveAdapter $googleDrive)
     {}
 
-    public function delete(string $fileId): bool
+    public function delete(string $fileId)
     {
         return $this->googleDrive->delete($fileId);
     }

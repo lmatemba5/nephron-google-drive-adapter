@@ -2,13 +2,11 @@
 
 namespace Nephron\Internal\Adapters;
 
-use Google\Service\Drive\DriveFile;
 use Nephron\Internal\Mutators\Uploader;
 use Nephron\Internal\Mutators\Deleter;
 use Nephron\Internal\Mutators\DirectoryManager;
 use Nephron\Internal\Mutators\Getter;
 use Illuminate\Http\UploadedFile;
-use Nephron\Models\PaginatedDriveFiles;
 
 /**
  * This is an internal implementation and it can change anytime. Do not use it directly
@@ -33,12 +31,12 @@ class GoogleDriveHandler
         return $this->uploader->put($file, $folderId, $fileName, $strict, $isPublic);
     }
 
-    public function mkdir(string $directoryName, ?string $folderId, bool $strict, bool $isPublic): DriveFile
+    public function mkdir(string $directoryName, ?string $folderId, bool $strict, bool $isPublic)
     {
         return $this->dmanager->mkdir($directoryName, $folderId, $strict, $isPublic);
     }
 
-    public function find(string $fileName, ?string $parentId, ?int $perPage, ?string $pageToken): PaginatedDriveFiles
+    public function find(string $fileName, ?string $parentId, ?int $perPage, ?string $pageToken)
     {
         return $this->getter->find($fileName, $parentId, $perPage, $pageToken);
     }
@@ -53,7 +51,7 @@ class GoogleDriveHandler
         return $this->uploader->makeFilePrivate($fileId);
     }
 
-    public function listFiles(?string $parentId, ?int $perPage, ?string $pageToken): PaginatedDriveFiles
+    public function listFiles(?string $parentId, ?int $perPage, ?string $pageToken)
     {
         return $this->getter->listFiles($parentId, $perPage, $pageToken);
     }
