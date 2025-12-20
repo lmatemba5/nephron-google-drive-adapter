@@ -3,8 +3,7 @@
 namespace Nephron\Internal\Adapters;
 
 use Google\Service\{Drive, Drive\DriveFile, Drive\Permission};
-use Psr\Http\Message\ResponseInterface;
-use Illuminate\Http\{UploadedFile, JsonResponse};
+use Illuminate\Http\{UploadedFile, Response};
 use Nephron\Models\PaginatedDriveFiles;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -59,28 +58,64 @@ class GoogleDriveAdapter
         return $driveFile;
     }
 
-    public function get(string $fileId, string $mode): StreamedResponse
+    public function get(string $fileId, string $mode): StreamedResponse | Response
     {
-
-        if (! in_array($mode, $this->STREAMING_MODES)) {
-            throw new \InvalidArgumentException("Invalid streaming mode: $mode");
+        if (! in_array($mode, $this->STREAMING_MODES, true)) {
+            throw new \InvalidArgumentException("Invalid streaming mode: {$mode}");
         }
 
-        $metadata = $this->googleServiceDrive->files->get($fileId, [
-            'fields' => 'name,mimeType'
-        ]);
+        try {
+            $metadata = $this->googleServiceDrive->files->get($fileId, [
+                'fields' => 'name,mimeType,size',
+            ]);
+        } catch (\Google\Service\Exception $e) {
+            abort($e->getCode() === 404 ? 404 : 403, 'File not accessible');
+        }
 
-        /** @var ResponseInterface $mediaResponse */
-        $mediaResponse = $this->googleServiceDrive->files->get($fileId, [
-            'alt' => 'media',
-        ]);
+        $etag = $this->makeEtag($fileId, $metadata->mimeType, $metadata->size);
 
-        $headers = $this->headers($metadata->mimeType, $metadata->name, $mode);
+        if ($this->isNotModified($etag)) {
+            return response('', 304, [
+                'ETag'                => $etag,
+                'Cache-Control'       => 'public, max-age=31536000, immutable',
+                'CDN-Cache-Control'   => 'public, max-age=31536000, immutable',
+            ]);
+        }
 
-        return response()->stream(function () use ($mediaResponse) {
-            echo $mediaResponse->getBody()->getContents();
-        }, 200, $headers);
+        $rangeHeader = request()->header('Range');
+        $options = ['alt' => 'media'];
+
+        if ($rangeHeader) {
+            $options['headers']['Range'] = $rangeHeader;
+        }
+
+        /** @var \Psr\Http\Message\ResponseInterface $mediaResponse */
+        $mediaResponse = $this->googleServiceDrive->files->get($fileId, $options);
+
+        $status = $rangeHeader ? 206 : 200;
+
+        $headers = $this->headers(
+            $metadata->mimeType,
+            $metadata->name,
+            $mode,
+            $mediaResponse->getHeaders(),
+            $etag
+        );
+
+        return response()->stream(
+            function () use ($mediaResponse) {
+                $stream = $mediaResponse->getBody();
+
+                while (! $stream->eof()) {
+                    echo $stream->read(1024 * 8);
+                    flush();
+                }
+            },
+            $status,
+            $headers
+        );
     }
+
 
     public function delete(string $fileId): bool
     {
@@ -212,34 +247,51 @@ class GoogleDriveAdapter
         return new PaginatedDriveFiles($result, $files->getNextPageToken());
     }
 
+    private function makeEtag(string $fileId, string $mime, ?string $size): string
+    {
+        return '"' . sha1($fileId . '|' . $mime . '|' . ($size ?? '0')) . '"';
+    }
+
+    private function isNotModified(string $etag): bool
+    {
+        $clientEtag = request()->header('If-None-Match');
+
+        return $clientEtag && trim($clientEtag) === $etag;
+    }
+
     private function headers(
         string $mime,
         string $filename,
-        string $mode
+        string $mode,
+        array $upstreamHeaders,
+        string $etag
     ): array {
         $headers = [
-            'Cache-Control' => 'public, max-age=31536000, immutable',
+            'ETag'                => $etag,
+            'Cache-Control'       => 'public, max-age=31536000, immutable',
+            'CDN-Cache-Control'   => 'public, max-age=31536000, immutable',
+            'Vary'                => 'Accept-Encoding',
+            'Accept-Ranges'       => 'bytes',
         ];
 
+        foreach (['Content-Range', 'Content-Length'] as $h) {
+            if (isset($upstreamHeaders[$h][0])) {
+                $headers[$h] = $upstreamHeaders[$h][0];
+            }
+        }
+
         return match ($mode) {
-            'inline' => $this->inline($mime, $headers),
+            'inline'   => $this->inline($mime, $headers),
             'download' => $this->download($filename, $headers),
         };
     }
 
+
     private function inline(string $mime, array $headers): array
     {
-        if (! in_array($mime, ['application/pdf', 'image/jpeg', 'video/mp4'])) {
-            abort(403, 'Inline preview not allowed');
-        }
-
         return array_merge($headers, [
             'Content-Type'        => $mime,
             'Content-Disposition' => 'inline',
-            'Accept-Ranges'       => $mime === 'video/mp4' ? 'bytes' : 'none',
-            'Cache-Control'       => 'public, max-age=31536000, immutable',
-            'CDN-Cache-Control'   => 'public, max-age=31536000, immutable',
-            'Vary'                => 'Accept-Encoding',
         ]);
     }
 
@@ -249,10 +301,7 @@ class GoogleDriveAdapter
     ): array {
         return array_merge($headers, [
             'Content-Type'        => 'application/octet-stream',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-            'Cache-Control'       => 'public, max-age=31536000, immutable',
-            'CDN-Cache-Control'   => 'public, max-age=31536000, immutable',
-            'Vary'                => 'Accept-Encoding',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\""
         ]);
     }
 }
