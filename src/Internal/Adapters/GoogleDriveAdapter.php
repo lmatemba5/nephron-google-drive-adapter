@@ -72,48 +72,17 @@ class GoogleDriveAdapter
             abort($e->getCode() === 404 ? 404 : 403, 'File not accessible');
         }
 
-        $etag = $this->makeEtag($fileId, $metadata->mimeType, $metadata->size);
-
-        if ($this->isNotModified($etag)) {
-            return response('', 304, [
-                'ETag'                => $etag,
-                'Cache-Control'       => 'public, max-age=31536000, immutable',
-                'CDN-Cache-Control'   => 'public, max-age=31536000, immutable',
-            ]);
-        }
-
-        $rangeHeader = request()->header('Range');
-        $options = ['alt' => 'media'];
-
-        if ($rangeHeader) {
-            $options['headers']['Range'] = $rangeHeader;
-        }
-
         /** @var \Psr\Http\Message\ResponseInterface $mediaResponse */
-        $mediaResponse = $this->googleServiceDrive->files->get($fileId, $options);
-
-        $status = $rangeHeader ? 206 : 200;
+        $mediaResponse = $this->googleServiceDrive->files->get($fileId, ['alt' => 'media']);
 
         $headers = $this->headers(
             $metadata->mimeType,
             $metadata->name,
             $mode,
-            $mediaResponse->getHeaders(),
-            $etag
+            $mediaResponse->getHeaders()
         );
 
-        return response()->stream(
-            function () use ($mediaResponse) {
-                $stream = $mediaResponse->getBody();
-
-                while (! $stream->eof()) {
-                    echo $stream->read(1024 * 8);
-                    flush();
-                }
-            },
-            $status,
-            $headers
-        );
+        return response($mediaResponse->getBody()->getContents(), 200, $headers);
     }
 
 
@@ -156,7 +125,16 @@ class GoogleDriveAdapter
 
     public function find(string $fileName, ?string $parentId, ?int $perPage, ?string $pageToken): PaginatedDriveFiles
     {
-        return $this->search("name = '$fileName'", $parentId ?: $this->parentId, $perPage, $pageToken);
+        return $this->search("name = '".$this->escapeQuery($fileName)."'", $parentId ?: $this->parentId, $perPage, $pageToken);
+    }
+
+    public function escapeQuery(string $value): string
+    {
+        $escaped = str_replace('\\', '\\\\', $value);
+        $escaped = str_replace("'", "\\'", $escaped);
+        $escaped = str_replace('"', '\\"', $escaped);
+
+        return $escaped;
     }
 
     public function rename(string $fileId, string $newName, ?string $parentFolderId, bool $strict): DriveFile
@@ -247,34 +225,15 @@ class GoogleDriveAdapter
         return new PaginatedDriveFiles($result, $files->getNextPageToken());
     }
 
-    private function makeEtag(string $fileId, string $mime, ?string $size): string
-    {
-        return '"' . sha1($fileId . '|' . $mime . '|' . ($size ?? '0')) . '"';
-    }
-
-    private function isNotModified(string $etag): bool
-    {
-        $clientEtag = request()->header('If-None-Match');
-
-        return $clientEtag && trim($clientEtag) === $etag;
-    }
-
     private function headers(
         string $mime,
         string $filename,
         string $mode,
         array $upstreamHeaders,
-        string $etag
     ): array {
-        $headers = [
-            'ETag'                => $etag,
-            'Cache-Control'       => 'public, max-age=31536000, immutable',
-            'CDN-Cache-Control'   => 'public, max-age=31536000, immutable',
-            'Vary'                => 'Accept-Encoding',
-            'Accept-Ranges'       => 'bytes',
-        ];
+        $headers = [];
 
-        foreach (['Content-Range', 'Content-Length'] as $h) {
+        foreach (['Content-Length'] as $h) {
             if (isset($upstreamHeaders[$h][0])) {
                 $headers[$h] = $upstreamHeaders[$h][0];
             }
@@ -282,7 +241,7 @@ class GoogleDriveAdapter
 
         return match ($mode) {
             'inline'   => $this->inline($mime, $headers),
-            'download' => $this->download($filename, $headers),
+            'download' => $this->download($filename, $headers, $mime),
         };
     }
 
@@ -297,11 +256,14 @@ class GoogleDriveAdapter
 
     private function download(
         string $filename,
-        array $headers
+        array $headers,
+        string $mime
     ): array {
+        $extension = explode('/', $mime)[1];
+
         return array_merge($headers, [
             'Content-Type'        => 'application/octet-stream',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\""
+            'Content-Disposition' => "attachment; filename=\"{$filename}.{$extension}\""
         ]);
     }
 }
