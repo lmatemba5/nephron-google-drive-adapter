@@ -1,17 +1,17 @@
 <?php
-
 namespace Nephron\Internal\Adapters;
 
-use Google\Service\{Drive, Drive\DriveFile, Drive\Permission};
-use Illuminate\Http\{UploadedFile, Response};
+use Google\Service\Drive;
+use Google\Service\Drive\DriveFile;
+use Google\Service\Drive\Permission;
+use Illuminate\Http\UploadedFile;
 use Nephron\Models\PaginatedDriveFiles;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * This is an internal implementation and it can change anytime. Do not use it directly
- * 
+ *
  * Use Nephron\GoogleDrive instead.
- * 
+ *
  * @internal
  * @psalm-internal Nephron
  * @phpstan-internal Nephron
@@ -33,8 +33,8 @@ class GoogleDriveAdapter
         $parentId = $folderId ?: $this->parentId;
 
         $filemetadata = new DriveFile([
-            'name' => $fileName ?: $file->getClientOriginalName(),
-            'parents' => [$parentId]
+            'name'    => $fileName ?: $file->getClientOriginalName(),
+            'parents' => [$parentId],
         ]);
 
         if ($strict) {
@@ -45,10 +45,10 @@ class GoogleDriveAdapter
             }
         }
 
-        $driveFile =  $this->googleServiceDrive->files->create($filemetadata, [
-            'data' => $file->getContent(),
+        $driveFile = $this->googleServiceDrive->files->create($filemetadata, [
+            'data'       => $file->getContent(),
             'uploadType' => 'multipart',
-            'fields' => 'id,name,webViewLink'
+            'fields'     => 'id,name,webViewLink',
         ]);
 
         if ($isPublic) {
@@ -58,7 +58,7 @@ class GoogleDriveAdapter
         return $driveFile;
     }
 
-    public function get(string $fileId, string $mode): StreamedResponse | Response
+    public function get(string $fileId, string $mode)
     {
         if (! in_array($mode, $this->STREAMING_MODES, true)) {
             throw new \InvalidArgumentException("Invalid streaming mode: {$mode}");
@@ -82,9 +82,12 @@ class GoogleDriveAdapter
             $mediaResponse->getHeaders()
         );
 
-        return response($mediaResponse->getBody()->getContents(), 200, $headers);
+        return response(
+            $mediaResponse->getBody()->getContents(),
+            200,
+            $headers
+        );
     }
-
 
     public function delete(string $fileId): bool
     {
@@ -107,12 +110,12 @@ class GoogleDriveAdapter
 
         $driveFolder = $this->googleServiceDrive->files->create(
             new DriveFile([
-                'name' => $directoryName,
+                'name'     => $directoryName,
                 'mimeType' => 'application/vnd.google-apps.folder',
-                'parents' => [$parentFolderId ?: $this->parentId]
+                'parents'  => [$parentFolderId ?: $this->parentId],
             ]),
             [
-                'fields' => 'id,name,webViewLink'
+                'fields' => 'id,name,webViewLink',
             ]
         );
 
@@ -125,7 +128,7 @@ class GoogleDriveAdapter
 
     public function find(string $fileName, ?string $parentId, ?int $perPage, ?string $pageToken): PaginatedDriveFiles
     {
-        return $this->search("name = '".$this->escapeQuery($fileName)."'", $parentId ?: $this->parentId, $perPage, $pageToken);
+        return $this->search("name = '" . $this->escapeQuery($fileName) . "'", $parentId ?: $this->parentId, $perPage, $pageToken);
     }
 
     public function escapeQuery(string $value): string
@@ -194,14 +197,13 @@ class GoogleDriveAdapter
 
     private function search(string $q, string $parentId, ?int $perPage, ?string $pageToken): PaginatedDriveFiles
     {
-        $optParams = array(
-            'spaces' => 'drive',
-            'q' => $q,
-            'pageSize' => $perPage,
+        $optParams = [
+            'spaces'    => 'drive',
+            'q'         => $q,
+            'pageSize'  => $perPage,
             'pageToken' => $pageToken,
-            'fields' => 'nextPageToken,files(id,name,webViewLink,parents,size)',
-        );
-
+            'fields'    => 'nextPageToken,files(id,name,webViewLink,parents,size)',
+        ];
 
         $files = $this->googleServiceDrive->files->listFiles($optParams);
 
@@ -233,18 +235,17 @@ class GoogleDriveAdapter
     ): array {
         $headers = [];
 
-        foreach (['Content-Length'] as $h) {
-            if (isset($upstreamHeaders[$h][0])) {
-                $headers[$h] = $upstreamHeaders[$h][0];
-            }
+        if (isset($upstreamHeaders['Content-Length'][0])) {
+            $headers['Content-Length'] = $upstreamHeaders['Content-Length'][0];
         }
+
+        $headers['Cache-Control'] = 'public, max-age=31536000, immutable';
 
         return match ($mode) {
             'inline'   => $this->inline($mime, $headers),
             'download' => $this->download($filename, $headers, $mime),
         };
     }
-
 
     private function inline(string $mime, array $headers): array
     {
@@ -263,7 +264,7 @@ class GoogleDriveAdapter
 
         return array_merge($headers, [
             'Content-Type'        => 'application/octet-stream',
-            'Content-Disposition' => "attachment; filename=\"{$filename}.{$extension}\""
+            'Content-Disposition' => "attachment; filename=\"{$filename}.{$extension}\"",
         ]);
     }
 }
