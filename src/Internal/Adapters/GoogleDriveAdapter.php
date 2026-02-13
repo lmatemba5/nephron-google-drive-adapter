@@ -239,8 +239,6 @@ class GoogleDriveAdapter
             $headers['Content-Length'] = $upstreamHeaders['Content-Length'][0];
         }
 
-        $headers['Cache-Control'] = 'public, max-age=31536000, immutable';
-
         return match ($mode) {
             'inline'   => $this->inline($mime, $headers),
             'download' => $this->download($filename, $headers, $mime),
