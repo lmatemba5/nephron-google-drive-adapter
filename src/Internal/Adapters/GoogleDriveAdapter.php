@@ -82,11 +82,16 @@ class GoogleDriveAdapter
             $mediaResponse->getHeaders()
         );
 
-        return response(
-            $mediaResponse->getBody()->getContents(),
-            200,
-            $headers
-        );
+        $headers['Expires']       = gmdate('D, d M Y H:i:s', time() + 31536000) . ' GMT';
+
+        $stream = $mediaResponse->getBody();
+
+        return response()->stream(function () use ($stream) {
+            while (! $stream->eof()) {
+                echo $stream->read(1024 * 8);
+                flush();
+            }
+        }, 200, $headers);
     }
 
     public function delete(string $fileId): bool
